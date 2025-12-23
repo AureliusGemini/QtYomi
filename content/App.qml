@@ -38,12 +38,12 @@ Window {
                     anchors.topMargin: 60
                     clip: true
                     cellWidth: width / 2
-                    cellHeight: 280
+                    cellHeight: 300
                     model: mangaController.libraryModel
 
                     delegate: Column {
                         width: GridView.view.cellWidth
-                        spacing: 8
+                        spacing: 5
 
                         Image {
                             width: 140
@@ -52,7 +52,7 @@ Window {
                             source: modelData.cover
                             fillMode: Image.PreserveAspectCrop
 
-                            Rectangle { // Border for visual clarity
+                            Rectangle { // Border
                                 anchors.fill: parent
                                 color: "transparent"
                                 border.color: "#333"
@@ -71,6 +71,7 @@ Window {
                             font.pixelSize: 13
                         }
 
+                        // Remove Button
                         Button {
                             text: "Remove"
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -83,7 +84,7 @@ Window {
                             }
                             contentItem: Text {
                                 text: parent.text
-                                color: "#ff5555" // Red text
+                                color: "#ff5555"
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -105,7 +106,7 @@ Window {
                     TextField {
                         id: searchField
                         Layout.fillWidth: true
-                        placeholderText: "Search MangaDex..."
+                        placeholderText: "Search Manga..."
                         color: "black"
                         background: Rectangle { color: "white"; radius: 4 }
                         onAccepted: mangaController.searchManga(text)
@@ -122,12 +123,12 @@ Window {
                     Layout.fillHeight: true
                     clip: true
                     cellWidth: width / 2
-                    cellHeight: 280
+                    cellHeight: 320 // Increased height for 2 buttons
                     model: mangaController.searchResults
 
                     delegate: Column {
                         width: GridView.view.cellWidth
-                        spacing: 8
+                        spacing: 5
 
                         Image {
                             width: 140
@@ -154,22 +155,37 @@ Window {
                             font.pixelSize: 13
                         }
 
-                        Button {
-                            text: "Read (Demo)"
+                        // --- ACTION BUTTONS (FIXED) ---
+                        Row {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            height: 30
+                            spacing: 5
 
-                            onClicked: {
-                                stackLayout.currentIndex = 2
-                                readerView.chapterId = "5430fb39-7711-4022-9233-024bea94e772"
-                                chapterController.loadChapter("5430fb39-7711-4022-9233-024bea94e772")
+                            // 1. DATABASE BUTTON (Save)
+                            Button {
+                                text: modelData.inLibrary ? "Saved" : "Add"
+                                enabled: !modelData.inLibrary
+                                height: 30
+                                width: 60
+                                onClicked: mangaController.addToLibrary(modelData.id, modelData.title, modelData.cover)
+                            }
+
+                            // 2. READER BUTTON (Demo)
+                            Button {
+                                text: "Read"
+                                height: 30
+                                width: 60
+                                onClicked: {
+                                    stackLayout.currentIndex = 2
+                                    readerView.chapterId = "demo-chapter-id"
+                                    chapterController.loadChapter("demo-chapter-id")
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // --- TAB 3: READER VIEW (NEW) ---
+            // --- TAB 3: READER VIEW ---
             ReaderView {
                 id: readerView
             }

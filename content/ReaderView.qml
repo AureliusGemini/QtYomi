@@ -4,25 +4,28 @@ import QtQuick.Layouts
 
 Page {
     id: readerPage
-    property string chapterId: "" // Passed from main app
-    
+    property string chapterId: ""
+
     background: Rectangle { color: "black" }
 
     Component.onCompleted: {
-        // When this view opens, tell C++ to fetch images
         if (chapterId) {
             chapterController.loadChapter(chapterId)
         }
     }
 
-    // Top Bar (Navigation)
     header: ToolBar {
         background: Rectangle { color: "#1e1e1e" }
         RowLayout {
             anchors.fill: parent
             ToolButton {
                 text: "← Back"
-                onClicked: stackLayout.currentIndex = 0 // Go back to Library/Browse
+                onClicked: {
+                    // FIX: Ensure we go back to the Browse Tab (Index 1)
+                    stackLayout.currentIndex = 1
+                    // FIX: Also update the TabBar to show "Browse" is selected
+                    tabBar.currentIndex = 1
+                }
                 contentItem: Text {
                     text: parent.text
                     color: "white"
@@ -30,37 +33,49 @@ Page {
                 }
             }
             Label {
-                text: "Reader"
+                text: "Reader (Demo Mode)"
                 color: "white"
                 font.bold: true
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
             }
-            Item { width: 50 } // Spacer
+            Item { width: 50 }
         }
     }
 
-    // The Actual Reader
     ListView {
         id: pageList
         anchors.fill: parent
         model: chapterController.pages
-        spacing: 0
-        cacheBuffer: 10000 // Preload pixels to make scrolling smooth
+        spacing: 5
+        cacheBuffer: 10000
 
-        delegate: Image {
+        delegate: Rectangle {
+            // FIX: If image fails, show a colored rectangle
             width: ListView.view.width
-            // Calculate height to maintain aspect ratio (defaulting to 1.4 ratio if loading)
-            height: width * (implicitHeight > 0 ? implicitHeight / implicitWidth : 1.4)
-            
-            source: modelData
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true // Important for UI responsiveness!
-            
-            // Loading Indicator
-            BusyIndicator {
+            height: 500
+            color: index % 2 === 0 ? "#222" : "#333"
+
+            Image {
+                anchors.fill: parent
+                source: modelData
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+
+                // Show busy indicator while loading
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: parent.status === Image.Loading
+                }
+            }
+
+            // Text to show page number if image fails
+            Text {
                 anchors.centerIn: parent
-                running: parent.status === Image.Loading
+                text: "Page " + (index + 1)
+                color: "white"
+                font.pixelSize: 24
+                visible: parent.children[0].status !== Image.Ready
             }
         }
     }
