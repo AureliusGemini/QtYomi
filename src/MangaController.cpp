@@ -18,7 +18,6 @@ void MangaController::searchManga(const QString &queryText) {
 
     qDebug() << "\n[MULTITHREADING] UI Action received on Thread:" << QThread::currentThread();
 
-    // JIKAN API (Unblocked)
     QUrl url("https://api.jikan.moe/v4/manga");
     QUrlQuery query;
     query.addQueryItem("q", queryText);
@@ -42,7 +41,6 @@ void MangaController::searchManga(const QString &queryText) {
             qDebug() << "[NETWORKING] Data Received. Size:" << reply->size() << "bytes";
             QByteArray data = reply->readAll();
 
-            // BACKGROUND THREAD: Parse JSON only
             QThreadPool::globalInstance()->start([this, data]() {
                 this->parseSearchResponse(data);
             });
@@ -54,7 +52,6 @@ void MangaController::searchManga(const QString &queryText) {
 }
 
 void MangaController::parseSearchResponse(const QByteArray &data) {
-    // RUNNING ON WORKER THREAD
     QJsonDocument doc = QJsonDocument::fromJson(data);
     const QJsonObject rootObj = doc.object();
     const QJsonArray dataArray = rootObj["data"].toArray();
@@ -77,16 +74,13 @@ void MangaController::parseSearchResponse(const QByteArray &data) {
         map["id"] = id;
         map["title"] = title;
         map["cover"] = coverUrl;
-        // NOTE: We do NOT check "inLibrary" here anymore to avoid threading errors
 
         rawResults.append(map);
     }
 
-    // SWITCH TO MAIN THREAD to check Database
     QMetaObject::invokeMethod(this, [this, rawResults]() {
         QVariantList finalResults;
 
-        // Now we are safe to talk to the Database
         for(const auto &item : rawResults) {
             QVariantMap map = item.toMap();
             map["inLibrary"] = DatabaseManager::instance().isBookmarked(map["id"].toString());
@@ -102,10 +96,10 @@ void MangaController::parseSearchResponse(const QByteArray &data) {
 void MangaController::addToLibrary(const QString &id, const QString &title, const QString &coverUrl) {
     DatabaseManager::instance().addToLibrary(id, title, coverUrl);
     refreshLibrary();
-    // Refresh button state manually since we can't easily re-search Jikan without rate limits
-    // (In a real app, we'd update the model directly, but this is fine for exam)
+
     QVariantList updatedList;
-    for(const auto &item : m_searchResults) {
+    // FIX: use std::as_const to prevent warning
+    for(const auto &item : std::as_const(m_searchResults)) {
         QVariantMap map = item.toMap();
         if(map["id"].toString() == id) {
             map["inLibrary"] = true;
@@ -121,7 +115,8 @@ void MangaController::removeFromLibrary(const QString &id) {
     refreshLibrary();
 
     QVariantList updatedList;
-    for(const auto &item : m_searchResults) {
+    // FIX: use std::as_const to prevent warning
+    for(const auto &item : std::as_const(m_searchResults)) {
         QVariantMap map = item.toMap();
         if(map["id"].toString() == id) {
             map["inLibrary"] = false;

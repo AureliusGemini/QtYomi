@@ -8,32 +8,29 @@ Window {
     height: 800
     visible: true
     title: "QtYomi"
-    color: "#121212" // Dark Theme Background
+    color: "#121212"
 
-    // --- GLOBAL STATE FOR MULTI-SELECT ---
+    // --- GLOBAL STATE ---
     property bool selectionMode: false
-    property var selectedIds: [] // JavaScript Array to hold selected IDs
+    property var selectedIds: []
 
-    // Helper to toggle selection
     function toggleSelection(id) {
         var idx = selectedIds.indexOf(id)
         if (idx >= 0) {
-            selectedIds.splice(idx, 1) // Remove if exists
+            selectedIds.splice(idx, 1)
         } else {
-            selectedIds.push(id) // Add if new
+            selectedIds.push(id)
         }
-        selectedIdsChanged() // Force QML to re-evaluate bindings
-
-        // Auto-exit if empty
-        if (selectedIds.length === 0) selectionMode = false
+        selectedIdsChanged()
+        if (selectedIds.length === 0) {
+            selectionMode = false
+        }
     }
 
     function deleteSelectedItems() {
-        // Loop through all selected IDs and remove them
         for (var i = 0; i < selectedIds.length; i++) {
             mangaController.removeFromLibrary(selectedIds[i])
         }
-        // Reset mode
         selectedIds = []
         selectionMode = false
     }
@@ -42,22 +39,20 @@ Window {
         anchors.fill: parent
         spacing: 0
 
-        // --- Content Area ---
         StackLayout {
             id: stackLayout
-            currentIndex: tabBar.currentIndex // 0=Library, 1=Browse, 2=Reader
+            currentIndex: 0
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            // --- TAB 1: LIBRARY ---
+            // --- TAB 1: LIBRARY (Index 0) ---
             Item {
-                // HEADER: changes based on Selection Mode
+                // Header
                 Item {
                     height: 50
                     width: parent.width
                     anchors.top: parent.top
 
-                    // Normal Header
                     Label {
                         text: "Your Library"
                         color: "white"
@@ -67,7 +62,6 @@ Window {
                         visible: !selectionMode
                     }
 
-                    // Multi-Select Header (Visible only when holding items)
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 10
@@ -81,20 +75,19 @@ Window {
                                 selectedIds = []
                             }
                         }
-
-                        Item { Layout.fillWidth: true } // Spacer
-
+                        Item {
+                            Layout.fillWidth: true
+                        }
                         Label {
                             text: selectedIds.length + " Selected"
                             color: "white"
                             font.bold: true
                         }
-
-                        Item { Layout.fillWidth: true } // Spacer
-
+                        Item {
+                            Layout.fillWidth: true
+                        }
                         Button {
                             text: "Delete (" + selectedIds.length + ")"
-
                             background: Rectangle {
                                 color: "#ff5555"
                                 radius: 4
@@ -115,15 +108,14 @@ Window {
                     anchors.topMargin: 60
                     clip: true
                     cellWidth: width / 2
-                    cellHeight: 320
+                    cellHeight: 300
                     model: mangaController.libraryModel
 
                     delegate: Column {
                         width: GridView.view.cellWidth
                         spacing: 5
 
-                        // COVER IMAGE WRAPPER
-                        Item {
+                        Item { // Cover Wrapper
                             width: 140
                             height: 200
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -135,8 +127,7 @@ Window {
                                 opacity: (selectionMode && selectedIds.indexOf(modelData.id) === -1) ? 0.5 : 1.0
                             }
 
-                            // SELECTION OVERLAY (Red Border + Checkmark)
-                            Rectangle {
+                            Rectangle { // Selection Border
                                 anchors.fill: parent
                                 color: "transparent"
                                 border.color: "#ff5555"
@@ -144,7 +135,8 @@ Window {
                                 visible: selectionMode && selectedIds.indexOf(modelData.id) >= 0
 
                                 Rectangle {
-                                    width: 30; height: 30
+                                    width: 30
+                                    height: 30
                                     color: "#ff5555"
                                     anchors.right: parent.right
                                     anchors.top: parent.top
@@ -156,7 +148,6 @@ Window {
                                 }
                             }
 
-                            // INTERACTION AREA (Tap or Hold)
                             MouseArea {
                                 anchors.fill: parent
                                 onPressAndHold: {
@@ -169,10 +160,9 @@ Window {
                                     if (selectionMode) {
                                         toggleSelection(modelData.id)
                                     } else {
-                                        // Normal Click: Go to Reader
+                                        readerView.previousTabIndex = 0
                                         stackLayout.currentIndex = 2
-                                        // Use demo ID for safety
-                                        chapterController.loadChapter("demo-chapter")
+                                        chapterController.loadChapter(modelData.id)
                                     }
                                 }
                             }
@@ -188,52 +178,26 @@ Window {
                             font.pixelSize: 13
                         }
 
-                        // BUTTONS (Hidden during selection mode)
-                        Row {
+                        Button {
+                            text: "Read"
                             anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: 5
+                            height: 30
+                            width: 100
                             visible: !selectionMode
-
-                            // 1. READ BUTTON (NEW!)
-                            Button {
-                                text: "Read"
-                                height: 30
-                                width: 60
-                                onClicked: {
-                                    stackLayout.currentIndex = 2
-                                    // Use demo ID for safety
-                                    chapterController.loadChapter("demo-chapter")
-                                }
-                            }
-
-                            // 2. REMOVE BUTTON
-                            Button {
-                                text: "Remove"
-                                height: 30
-                                width: 70
-                                flat: true
-                                background: Rectangle {
-                                    color: "#333"
-                                    radius: 4
-                                }
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: "#ff5555"
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                                onClicked: mangaController.removeFromLibrary(modelData.id)
+                            onClicked: {
+                                readerView.previousTabIndex = 0
+                                stackLayout.currentIndex = 2
+                                chapterController.loadChapter(modelData.id)
                             }
                         }
                     }
                 }
             }
 
-            // --- TAB 2: BROWSE ---
+            // --- TAB 2: BROWSE (Index 1) ---
             ColumnLayout {
                 spacing: 10
 
-                // Search Bar
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.margins: 10
@@ -244,23 +208,34 @@ Window {
                         Layout.fillWidth: true
                         placeholderText: "Search Manga..."
                         color: "black"
-                        background: Rectangle { color: "white"; radius: 4 }
+                        background: Rectangle {
+                            color: "white"
+                            radius: 4
+                        }
                         onAccepted: mangaController.searchManga(text)
                     }
+
                     Button {
                         text: "Search"
                         onClicked: mangaController.searchManga(searchField.text)
                     }
                 }
 
-                // Results Grid
                 GridView {
+                    id: browseGrid
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
                     cellWidth: width / 2
                     cellHeight: 320
                     model: mangaController.searchResults
+
+                    Timer {
+                        id: scrollFixTimer
+                        interval: 10
+                        property real savedPos: 0
+                        onTriggered: browseGrid.contentY = savedPos
+                    }
 
                     delegate: Column {
                         width: GridView.view.cellWidth
@@ -281,12 +256,12 @@ Window {
                                 radius: 4
                             }
 
-                            // Make image clickable to read immediately
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: {
+                                    readerView.previousTabIndex = 1
                                     stackLayout.currentIndex = 2
-                                    chapterController.loadChapter("demo-chapter")
+                                    chapterController.loadChapter(modelData.id)
                                 }
                             }
                         }
@@ -305,23 +280,26 @@ Window {
                             anchors.horizontalCenter: parent.horizontalCenter
                             spacing: 5
 
-                            // SAVE BUTTON
                             Button {
                                 text: modelData.inLibrary ? "Saved" : "Add"
                                 enabled: !modelData.inLibrary
                                 height: 30
                                 width: 60
-                                onClicked: mangaController.addToLibrary(modelData.id, modelData.title, modelData.cover)
+                                onClicked: {
+                                    scrollFixTimer.savedPos = browseGrid.contentY
+                                    mangaController.addToLibrary(modelData.id, modelData.title, modelData.cover)
+                                    scrollFixTimer.restart()
+                                }
                             }
 
-                            // READ BUTTON
                             Button {
                                 text: "Read"
                                 height: 30
                                 width: 60
                                 onClicked: {
+                                    readerView.previousTabIndex = 1
                                     stackLayout.currentIndex = 2
-                                    chapterController.loadChapter("demo-chapter")
+                                    chapterController.loadChapter(modelData.id)
                                 }
                             }
                         }
@@ -329,7 +307,7 @@ Window {
                 }
             }
 
-            // --- TAB 3: READER VIEW ---
+            // --- TAB 3: READER (Index 2) ---
             ReaderView {
                 id: readerView
             }
@@ -339,8 +317,14 @@ Window {
         TabBar {
             id: tabBar
             Layout.fillWidth: true
-            background: Rectangle { color: "#1e1e1e" }
-            visible: !selectionMode // Hide tabs when deleting items to avoid confusion
+            background: Rectangle {
+                color: "#1e1e1e"
+            }
+            visible: !selectionMode
+
+            onCurrentIndexChanged: {
+                stackLayout.currentIndex = currentIndex
+            }
 
             TabButton {
                 text: "Library"
@@ -350,7 +334,9 @@ Window {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                background: Rectangle { color: "transparent" }
+                background: Rectangle {
+                    color: "transparent"
+                }
             }
             TabButton {
                 text: "Browse"
@@ -360,7 +346,9 @@ Window {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                background: Rectangle { color: "transparent" }
+                background: Rectangle {
+                    color: "transparent"
+                }
             }
         }
     }

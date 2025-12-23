@@ -5,13 +5,12 @@ import QtQuick.Layouts
 Page {
     id: readerPage
     property string chapterId: ""
+    property int previousTabIndex: 1
 
     background: Rectangle { color: "black" }
 
     Component.onCompleted: {
-        if (chapterId) {
-            chapterController.loadChapter(chapterId)
-        }
+        if (chapterId) chapterController.loadChapter(chapterId)
     }
 
     header: ToolBar {
@@ -21,16 +20,12 @@ Page {
             ToolButton {
                 text: "← Back"
                 onClicked: {
-                    // FIX: Ensure we go back to the Browse Tab (Index 1)
-                    stackLayout.currentIndex = 1
-                    // FIX: Also update the TabBar to show "Browse" is selected
-                    tabBar.currentIndex = 1
+                    // FIX: Force both to match.
+                    // Since we removed the binding in App.qml, this is now safe and reliable.
+                    tabBar.currentIndex = previousTabIndex
+                    stackLayout.currentIndex = previousTabIndex
                 }
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    verticalAlignment: Text.AlignVCenter
-                }
+                contentItem: Text { text: parent.text; color: "white"; verticalAlignment: Text.AlignVCenter }
             }
             Label {
                 text: "Reader (Demo Mode)"
@@ -51,7 +46,6 @@ Page {
         cacheBuffer: 10000
 
         delegate: Rectangle {
-            // FIX: If image fails, show a colored rectangle
             width: ListView.view.width
             height: 500
             color: index % 2 === 0 ? "#222" : "#333"
@@ -61,15 +55,8 @@ Page {
                 source: modelData
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
-
-                // Show busy indicator while loading
-                BusyIndicator {
-                    anchors.centerIn: parent
-                    running: parent.status === Image.Loading
-                }
+                BusyIndicator { anchors.centerIn: parent; running: parent.status === Image.Loading }
             }
-
-            // Text to show page number if image fails
             Text {
                 anchors.centerIn: parent
                 text: "Page " + (index + 1)
